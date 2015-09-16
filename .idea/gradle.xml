@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="GradleSettings">
+    <option name="linkedExternalProjectsSettings">
+      <GradleProjectSettings>
+        <option name="disableWrapperSourceDistributionNotification" value="true" />
+        <option name="distributionType" value="DEFAULT_WRAPPED" />
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="gradleJvm" value="1.8" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/android_10" />
+            <option value="$PROJECT_DIR$/android_15" />
+            <option value="$PROJECT_DIR$/rosjavasupplemental" />
+            <option value="$PROJECT_DIR$/smartExtensionAPI" />
+            <option value="$PROJECT_DIR$/smartExtensionUtils" />
+            <option value="$PROJECT_DIR$/smartEyeglassAPI" />
+            <option value="$PROJECT_DIR$/stream" />
+          </set>
+        </option>
+      </GradleProjectSettings>
+    </option>
+  </component>
+</project>
