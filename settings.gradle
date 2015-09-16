@@ -19,8 +19,6 @@ include 'my_android_project'
 include 'my_android_library_project'
 */
 include 'android_10', 'android_15'
-include 'rosjavasupplemental'
-//include 'theoravideosubscriber'
 include 'stream'
 include ':smartExtensionAPI'
 include ':smartExtensionUtils'

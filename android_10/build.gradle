@@ -23,6 +23,11 @@ dependencies {
 apply plugin: "com.android.library"
 
 android {
+
+  lintOptions {
+    abortOnError false
+  }
+
   compileSdkVersion 10
 
   defaultConfig {

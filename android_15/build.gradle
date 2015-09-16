@@ -26,6 +26,11 @@ apply plugin: 'com.android.library'
 android {
   compileSdkVersion 15
 
+  lintOptions {
+    abortOnError false
+  }
+
+
   defaultConfig {
     minSdkVersion 15
     targetSdkVersion 15
