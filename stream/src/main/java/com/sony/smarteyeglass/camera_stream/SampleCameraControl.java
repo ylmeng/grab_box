@@ -1,10 +1,8 @@
 package com.sony.smarteyeglass.camera_stream;
 
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
-import android.hardware.Camera;
-import android.preference.PreferenceManager;
+import android.graphics.BitmapFactory;
 import android.util.Log;
 
 import com.sony.smarteyeglass.extension.util.CameraEvent;
@@ -13,8 +11,6 @@ import com.sony.smarteyeglass.extension.util.SmartEyeglassControlUtils;
 import com.sony.smarteyeglass.extension.util.SmartEyeglassEventListener;
 import com.sonyericsson.extras.liveware.aef.control.Control;
 import com.sonyericsson.extras.liveware.extension.util.control.ControlExtension;
-
-import org.ros.android.view.camera.CompressedImagePublisher;
 
 /**
  * Shows how to access the SmartEyeglass camera to capture pictures.
@@ -56,7 +52,9 @@ public final class SampleCameraControl extends ControlExtension {
             @Override
             public void onCameraReceived(final CameraEvent event) {
                 Log.d(Constants.LOG_TAG, "onCameraReceived: ");
-                imagePublisher.onNewRawImage(event.getData(), 320,240);
+                imagePublisher.onNewRawImage(event.getData(), 320, 240);
+                Bitmap bitmap = Bitmap.createScaledBitmap( BitmapFactory.decodeByteArray(event.getData(),0,event.getData().length), 100,100, false);
+                utils.sendARAnimationObject(1, bitmap);
 
                 //mode.handleCameraEvent(event);
             }
@@ -103,38 +101,6 @@ public final class SampleCameraControl extends ControlExtension {
                 showBitmap(bitmap);
             }
         });
-
-        /*SharedPreferences prefs =
-                PreferenceManager.getDefaultSharedPreferences(context);
-
-        // Track current camera mode parameters
-        CameraModeFactory[] factories = CameraModeFactory.values();
-
-        int recordMode = Integer.parseInt(prefs.getString(
-                context.getString(R.string.preference_key_recordmode), "2"));
-        if (recordMode < 0 || recordMode >= factories.length) {
-            recordMode = 0;
-        }
-        // Get and show current recording mode
-        mode = factories[recordMode].of(context);
-        mode.setBitmapDisplay(new BitmapDisplay() {
-            @Override
-            public void displayBitmap(final Bitmap bitmap) {
-                showBitmap(bitmap);
-            }
-        });
-        // Get and show quality parameters
-        int jpegQuality =  1;
-                //Integer.parseInt(prefs.getString(
-                //context.getString(R.string.preference_key_jpeg_quality), "1"));
-        int preferenceId = mode.getPreferenceId();
-        int resolution = Integer.parseInt(prefs.getString(
-                context.getString(preferenceId), "6"));
-
-        // Set the camera mode to match the setup
-        utils.setCameraMode(jpegQuality, resolution, mode.getRecordingMode());
-        // Display instruction for current recording mode
-        mode.updateDisplay(); */
         Log.d(Constants.LOG_TAG, "Preparing to set camera mode ");
 
         utils.setCameraMode(1, 6, 3);

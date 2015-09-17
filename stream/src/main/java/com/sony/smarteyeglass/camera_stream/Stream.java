@@ -1,11 +1,13 @@
 package com.sony.smarteyeglass.camera_stream;
 
 
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.WindowManager;
 
+import org.ros.android.MasterChooser;
 import org.ros.android.RosActivity;
 import org.ros.node.NodeConfiguration;
 import org.ros.node.NodeMainExecutor;
@@ -33,6 +35,15 @@ public class Stream extends RosActivity
         setContentView(R.layout.main);
         imageSubscriber = (CompressedVideoView) findViewById(R.id.ros_camera_preview_view);
 
+    }
+
+    @Override
+    public void onDestroy()
+    {
+        super.onDestroy();
+        stopService(new Intent(this, SampleExtensionService.class));
+        stopService(new Intent(this, ExtensionReceiver.class));
+        stopService(new Intent(this, MasterChooser.class));
     }
 
     @Override

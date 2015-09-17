@@ -31,7 +31,6 @@ dependencies {
   //compile project(':theoravideosubscriber')
 }
 
-
 apply plugin: 'com.android.application'
 
 android {
@@ -40,7 +39,7 @@ android {
   lintOptions {
     abortOnError false
   }
-  
+
   defaultConfig {
     minSdkVersion 19
     targetSdkVersion 19
