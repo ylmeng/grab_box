@@ -74,8 +74,8 @@ public class Stream extends RosActivity implements View.OnTouchListener
 
     @Override
     public boolean onTouch(View view, MotionEvent motionEvent) {
-        SelectionSub.boxPos.x = (int)(motionEvent.getX() / view.getWidth() * 400);
-        SelectionSub.boxPos.y = (int)(motionEvent.getY() / view.getHeight() * 100);
+        SampleCameraControl.moveSquare((int)(motionEvent.getX() / view.getWidth() * 400),
+                (int)(motionEvent.getY() / view.getHeight() * 100));
         return false;
     }
 }

@@ -35,8 +35,7 @@ public class SelectionSub implements NodeMain {
         subscriber.addMessageListener(new MessageListener<geometry_msgs.Point>() {
             @Override
             public void onNewMessage(geometry_msgs.Point message) {
-                boxPos.x = (int)message.getX();
-                boxPos.y = (int)message.getY();
+                SampleCameraControl.moveSquare((int) message.getX(), (int) message.getY());
                 Log.d(Constants.LOG_TAG, "I heard: \"" + message.getX() + " y: "+ message.getY() + "\"");
             }
         });

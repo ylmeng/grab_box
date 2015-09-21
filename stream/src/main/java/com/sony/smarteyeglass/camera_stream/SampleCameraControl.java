@@ -29,15 +29,14 @@ import com.sonyericsson.extras.liveware.extension.util.sensor.AccessorySensorEve
 import com.sonyericsson.extras.liveware.extension.util.sensor.AccessorySensorException;
 import com.sonyericsson.extras.liveware.extension.util.sensor.AccessorySensorManager;
 
-import java.util.Timer;
-import java.util.TimerTask;
-
 /**
  * Shows how to access the SmartEyeglass camera to capture pictures.
  * Demonstrates how to listen to camera events, process
  * camera data, display pictures, and store image data to external storage.
  */
 public final class SampleCameraControl extends ControlExtension {
+
+    public static SampleCameraControl sampleCameraControl;
 
     /**
      * Set constants
@@ -64,10 +63,10 @@ public final class SampleCameraControl extends ControlExtension {
     private int count = 0;
 
     /** */
-    private static final int OBJECT_ID = 1;
+    private static final int SQUARE_ID = 1, BACKGROUND_ID = 2;
     /** */
-//    private CylindricalRenderObject renderObj;
-    private GlassesRenderObject renderObj, backgroundObj;
+//    private CylindricalRenderObject squareObj;
+    private GlassesRenderObject squareObj, backgroundObj;
 
     /** Sensor management objects*/
     private AccessorySensor sensor = null;
@@ -75,24 +74,13 @@ public final class SampleCameraControl extends ControlExtension {
     /** */
     private AccessorySensorManager sensorManager;
 
-    /** Animation interval time */
-    private static final int ANIMATION_INTERVAL_TIME = 66;
-
     /** Animation bitmap sequence */
     private SparseArray<Bitmap> imageMap = new SparseArray<Bitmap>();
-
-    /** Animation starts disabled */
-    private boolean isAnimation = false;
-
-    /** Animation frame counter */
-    private int frameCount = 0;
-
-    /** Animation timer */
-    private Timer timer;
 
     /** Handlers for AR events */
     private SmartEyeglassEventListener listener;
 
+    private boolean IS_AR_ACTIVATED;
 
     ///////////////////////////
 
@@ -118,6 +106,8 @@ public final class SampleCameraControl extends ControlExtension {
     public SampleCameraControl(final Context context,
                                final String hostAppPackageName) {
         super(context, hostAppPackageName);
+
+        sampleCameraControl = this;
 
         this.context = context;
         sensorManager = new AccessorySensorManager(context, hostAppPackageName);
@@ -150,7 +140,7 @@ public final class SampleCameraControl extends ControlExtension {
                         "onLocalRenderingObjectRequest() "
                                 + " objectId=" + objectId);
                 // send bitmap
-                utils.sendARObjectResponse(renderObj, 0);
+                utils.sendARObjectResponse( AR_ID_LOOKUP(objectId), 0);
             }
 
             ////////////////////
@@ -161,16 +151,22 @@ public final class SampleCameraControl extends ControlExtension {
             // handle result according to current recording mode
             @Override
             public void onCameraReceived(final CameraEvent event) {
+
                 Log.d(Constants.LOG_TAG, "onCameraReceived: ");
-                imagePublisher.onNewRawImage(event.getData(), 320, 240);
+                //imagePublisher.onNewRawImage(event.getData(), 320, 240);
 
             // To enable camera feedback on glass
-            /*    Bitmap bitmap = Bitmap.createScaledBitmap( BitmapFactory.decodeByteArray(event.getData(),0,event.getData().length), 100,100, false);
+                Bitmap bitmap = Bitmap.createScaledBitmap( BitmapFactory.decodeByteArray(event.getData(),0,event.getData().length), 419,138, false);
 
-                utils.sendARAnimationObject(20, bitmap);
-
-                mode.handleCameraEvent(event);
-            */}
+                Log.d(Constants.LOG_TAG, "Updating background");
+                if(backgroundObj != null) {
+                    utils.sendARAnimationObject(BACKGROUND_ID, bitmap);
+                } else if(IS_AR_ACTIVATED) {
+                    loadBackground(bitmap);
+                }
+                Log.d(Constants.LOG_TAG, "exited onCameraReceived");
+                //mode.handleCameraEvent(event);
+            }
 
             // Called when camera operation has failed
             // We just log the error
@@ -245,9 +241,28 @@ public final class SampleCameraControl extends ControlExtension {
     /** Start the rendering operation. */
     private void renderStart() {
         utils.setRenderMode(SmartEyeglassControl.Intents.MODE_AR);
+        IS_AR_ACTIVATED = true;
         utils.changeARCylindricalVerticalRange(VER_RANGE);
         loadResource();
-        startARAnimation();
+        utils.enableARAnimationRequest();
+    }
+
+    private void loadBackground(Bitmap bitmap) {
+        backgroundObj = new GlassesRenderObject(BACKGROUND_ID, bitmap, 0,
+                0, 0, SmartEyeglassControl.Intents.AR_OBJECT_TYPE_ANIMATED_IMAGE);
+
+        registerObject(backgroundObj);
+    }
+
+    public static void moveSquare(int x, int y) {
+        if(sampleCameraControl != null && sampleCameraControl.squareObj != null) {
+            if(sampleCameraControl.squareObj.getPosition().x != x
+                    || sampleCameraControl.squareObj.getPosition().y != y)
+            {
+                sampleCameraControl.squareObj.setPositon(new Point(x, y));
+                sampleCameraControl.utils.moveARObject(sampleCameraControl.squareObj);
+            }
+        }
     }
 
     /**
@@ -255,15 +270,14 @@ public final class SampleCameraControl extends ControlExtension {
      * and register it with the AR engine.
      */
     private void loadResource() {
-
-        //backgroundObj = new GlassesRenderObject(20, null, 0,
-        //        0, 0, SmartEyeglassControl.Intents.AR_OBJECT_TYPE_ANIMATED_IMAGE);
+        if(squareObj != null)
+            return;
 
         //Fixed position object
-        renderObj = new GlassesRenderObject(OBJECT_ID,
-                getBitmapResource(R.drawable.sample_00), 0,
+        squareObj = new GlassesRenderObject(SQUARE_ID,
+                getBitmapResource(R.drawable.sample_24), 0,
                 SelectionSub.boxPos.x, SelectionSub.boxPos.y,
-                SmartEyeglassControl.Intents.AR_OBJECT_TYPE_ANIMATED_IMAGE);
+                SmartEyeglassControl.Intents.AR_OBJECT_TYPE_STATIC_IMAGE);
 
 /*
         final float v = 0.0f;
@@ -272,13 +286,13 @@ public final class SampleCameraControl extends ControlExtension {
         SelectionSub.boxPos.x = baseDeg;
         SelectionSub.boxPos.y = 0;
 
-        renderObj = new CylindricalRenderObject(OBJECT_ID,
+        squareObj = new CylindricalRenderObject(OBJECT_ID,
                 getBitmapResource(R.drawable.sample_00), 0,
                 SmartEyeglassControl.Intents.AR_OBJECT_TYPE_ANIMATED_IMAGE,
                 h, v);
         */
-        //registerObject(backgroundObj);
-        registerObject(renderObj);
+
+        registerObject(squareObj);
     }
 
     /**
@@ -386,7 +400,7 @@ public final class SampleCameraControl extends ControlExtension {
     @Override
     public void onPause() {
         // Stop animation
-        stopARAnimation();
+        utils.disableARAnimationRequest();
 
         // Stop sensors
         if (sensor == null) {
@@ -396,8 +410,8 @@ public final class SampleCameraControl extends ControlExtension {
         sensor.unregisterListener();
         sensor = null;
 
-        //mode.closeCamera(utils);
-        //mode = null;
+        mode.closeCamera(utils);
+        mode = null;
     }
 
     @Override
@@ -411,72 +425,15 @@ public final class SampleCameraControl extends ControlExtension {
         imageMap.clear();
     }
 
-    /**
-     * Get next frame of the animation and send it with same object ID
-     */
-    private void updateAnimationimage() {
-        if (!isAnimation) {
-            return;
+    public RenderObject AR_ID_LOOKUP(int id) {
+        switch(id) {
+            case SQUARE_ID:
+                return squareObj;
+            case BACKGROUND_ID:
+                return backgroundObj;
+            default:
+                return null;
         }
-
-        if(renderObj.getPosition().x != SelectionSub.boxPos.x
-                || renderObj.getPosition().y != SelectionSub.boxPos.y)
-        {
-            renderObj.setPositon(new Point(SelectionSub.boxPos.x, SelectionSub.boxPos.y));
-            utils.moveARObject(renderObj);
-        }
-
-        Bitmap bitmap = imageMap.get(frameCount);
-        if (bitmap != null) {
-            utils.sendARAnimationObject(OBJECT_ID, bitmap);
-            Log.d(Constants.LOG_TAG, "update animation image: " + frameCount);
-            frameCount++;
-        }
-        if (frameCount >= AnimationResources.MAX_FRAME) {
-            frameCount = 0;
-        }
-    }
-
-    /** Start animation rendering operation */
-    private void startARAnimation() {
-        utils.enableARAnimationRequest();
-
-        // Clear timer variable, if it is already holding a Timer object
-        if (timer != null) {
-            timer.cancel();
-            timer = null;
-        }
-
-        // Create a new instance of Timer and set it to run with interval
-        // time value
-        timer = new Timer();
-        timer.schedule(new TimerTask() {
-            private Handler mHandler = new Handler();
-            @Override
-            public void run() {
-                mHandler.post(new Runnable() {
-                    public void run() {
-                        updateAnimationimage();
-                    }
-                });
-            }
-        }, 0, ANIMATION_INTERVAL_TIME);
-
-        Log.d(Constants.LOG_TAG, "start animation");
-        isAnimation = true;
-    }
-
-    /** Stop animation rendering operation */
-    private void stopARAnimation() {
-        // stop timer
-        if (timer != null) {
-            timer.cancel();
-            timer = null;
-        }
-
-        utils.disableARAnimationRequest();
-
-        Log.d(Constants.LOG_TAG, "stop animation");
-        isAnimation = true;
     }
 }
+
