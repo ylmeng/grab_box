@@ -36,15 +36,15 @@ public class CompressedVideoView extends SurfaceView implements SurfaceHolder.Ca
 
     public CompressedVideoView(Context context) {
         super(context);
-        initilize();
+        initialize();
     }
 
     public CompressedVideoView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        initilize();
+        initialize();
     }
 
-    private void initilize() {
+    private void initialize() {
         cameraSub = null;
         rootNodeName = "/camera";
         topicName="/camera/image";
