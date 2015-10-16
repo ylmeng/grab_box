@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Point;
 import android.graphics.PointF;
+import android.graphics.Rect;
 import android.os.Handler;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -42,17 +43,20 @@ public final class SampleCameraControl extends ControlExtension {
     /** The application context. */
     private final Context context;
 
+    private static SampleCameraControl instance;
+
     /** Instance of the Control Utility class. */
     private final SmartEyeglassControlUtils utils;
 
     /** Uses SmartEyeglass API version*/
     private static final int SMARTEYEGLASS_API_VERSION = 3;
 
-    /** The camera mode. */
-    private SonyCameraPublisher imagePublisher;
+    private int width = 419, height = 138;
+    boolean completedTask;
 
-    private static Point square_center = new Point(-1, -1);
-    private final Bitmap square_bmp;
+    public static SampleCameraControl getInstance() {
+        return instance;
+    }
 
     /**
      * Creates an instance of this control class.
@@ -65,71 +69,15 @@ public final class SampleCameraControl extends ControlExtension {
         super(context, hostAppPackageName);
 
         this.context = context;
-        imagePublisher = SonyCameraPublisher.getInstance();
-        Log.d(Constants.LOG_TAG, "Starting up image handlers ");
 
-        SmartEyeglassEventListener listener = new SmartEyeglassEventListener() {
+        instance = this;
 
-            ////////////////////
-            //Camera Listeners//
-            ////////////////////
-
-            long last_frame = 0;
-            // When camera operation has succeeded
-            // handle result according to current recording mode
-            @Override
-            public void onCameraReceived(final CameraEvent event) {
-
-                if(event == null || event.getData() == null) {
-
-                    Log.d("mySony", "Skipped a frame");
-                    return;
-
-                }
-
-                Log.d(Constants.LOG_TAG, "onCameraReceived: ");
-                imagePublisher.onNewRawImage(event.getData(), 320, 240);
-
-                if (event.getTimestamp() - last_frame < 600) {
-                    Log.d("mySony", "Skipped a glasses-frame");
-                    return;
-                }
-                else {
-                    last_frame = event.getTimestamp();
-                }
-
-                Log.d(Constants.LOG_TAG, "Updating background");
-                // To enable camera feedback on glass
-                Bitmap bitmap = Bitmap.createScaledBitmap( BitmapFactory.decodeByteArray(
-                        event.getData(),0,event.getData().length), 100, 100, false); //419, 138, false);
-
-                updateDisplay(bitmap, event.getTimestamp());
-
-                Log.d(Constants.LOG_TAG, "exited onCameraReceived");
-            }
-
-            // Called when camera operation has failed
-            // We just log the error
-            @Override
-            public void onCameraErrorReceived(final int error) {
-                Log.d(Constants.LOG_TAG, "onCameraErrorReceived: " + error);
-            }
-            // When camera is set to record image to a file,
-            // log the operation and clean up
-            @Override
-            public void onCameraReceivedFile(final String filePath) {
-                Log.d(Constants.LOG_TAG, "onCameraReceivedFile: " + filePath);
-            }
-        };
-
-        square_bmp = getBitmapResource(R.drawable.sample_27);
-        utils = new SmartEyeglassControlUtils(hostAppPackageName, listener);
+        utils = new SmartEyeglassControlUtils(hostAppPackageName, new SmartEyeglassEventListener());
         utils.setRequiredApiVersion(SMARTEYEGLASS_API_VERSION);
         utils.activate(context);
-        utils.setPowerMode(SmartEyeglassControl.Intents.POWER_MODE_HIGH);
+        utils.setPowerMode(SmartEyeglassControl.Intents.POWER_MODE_NORMAL);
 
-        Log.d(Constants.LOG_TAG, "Done setting up image/ handlers ");
-
+        Log.d(Constants.LOG_TAG, "Done setting up utils");
     }
 
     // Clean up data structures on termination.
@@ -148,21 +96,27 @@ public final class SampleCameraControl extends ControlExtension {
 
         Log.d(Constants.LOG_TAG, "Preparing to set camera mode ");
 
+        /* enable for camera
         utils.setCameraMode(1, 6, 3);
         try {
             utils.startCamera();
         } catch (ControlCameraException e) {
             e.printStackTrace();
         }
+        */
         Log.d(Constants.LOG_TAG, "Camera Mode set ");
+
+        drawBox();
     }
 
-    // Respond to tap on touch pad by switching camera modes.
     @Override
     public void onTap(final int action, final long timeStamp) {
         if (action != Control.TapActions.SINGLE_TAP) {
             return;
         }
+
+        completedTask = false;
+        drawBox();
     }
 
     // Stop showing animation and listening for sensor data
@@ -175,6 +129,7 @@ public final class SampleCameraControl extends ControlExtension {
     @Override
     public void onTouch(final ControlTouchEvent ev) {
         super.onTouch(ev);
+
     }
 
     @Override
@@ -193,37 +148,57 @@ public final class SampleCameraControl extends ControlExtension {
         return b;
     }
 
-    //Jordan's bitmap function
-    private void updateDisplay(Bitmap bmp, long t)
-    {
-        Log.d("mySony", "updating the display, time change: " + (System.currentTimeMillis() - t) );
-        if(bmp == null)
-            return;
+    void updateDisplay() {
+        if(!completedTask) {
+            drawBox();
+        }
+    }
+
+    public void drawBox() {
+        Bitmap box_bmp = getBitmapResource(R.drawable.box);
+        Bitmap bmp = Bitmap.createBitmap(width, height, box_bmp.getConfig());
+
+        Log.d("handle", box_bmp.getWidth() + " " + box_bmp.getHeight());
+
+        Canvas canvas = new Canvas(bmp);
+        Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
+        canvas.drawBitmap(box_bmp, width/2 - box_bmp.getWidth()/2, height / 2 - box_bmp.getHeight() / 2, paint);
+
+        showBitmap(bmp);
+    }
+
+    /**
+     * draws text to the center of the screen
+     * @param message
+     */
+    public void showText(String message) {
+        Bitmap bmp = Bitmap.createBitmap(width, height, Bitmap.Config.RGB_565);
 
         Canvas canvas = new Canvas(bmp);
         Paint paint = new Paint();
         paint.setStyle(Paint.Style.FILL);
-        paint.setTextSize(16);
+        paint.setTextSize(40);
         paint.setColor(Color.WHITE);
 
-        if (isSquareOn())
-        {
-            canvas.drawBitmap(square_bmp, square_center.x, square_center.y, paint);
+        //used to center text on the screen
+        Rect bounds = new Rect();
+        paint.getTextBounds(message, 0, message.length(), bounds);
+
+        canvas.drawText(message, width / 2 - bounds.width() / 2, height / 2 - bounds.height() / 2, paint);
+
+        showBitmap(bmp);
+    }
+
+    public void handleGesture(int pose_num) {
+        if(pose_num == 1) {
+            completedTask = true;
         }
 
-        Log.d("mySony", "updating the display, time change: " + (System.currentTimeMillis() - t) );
-        showBitmap(bmp);
-        Log.d("mySony", "updating the display, time change: " + (System.currentTimeMillis() - t));
-        Log.d("mySony", "-");
+        if(completedTask) {
+            showText("Great job!");
+        } else {
+            drawBox();
+        }
     }
-
-    public static boolean isSquareOn() {
-        return (square_center.x > 0 && square_center.y > 0);
-    }
-
-    public static void moveSquare(int x, int y) {
-        square_center.set(x, y);
-    }
-
 }
 

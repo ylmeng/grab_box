@@ -19,12 +19,9 @@ import org.ros.node.NodeMainExecutor;
 
 import java.io.IOException;
 
-public class Stream extends RosActivity implements View.OnTouchListener
+public class Stream extends RosActivity
 {
-    private int cameraId;
-    private CompressedVideoView imageSubscriber;
-    private SelectionSub boxSubscriber;
-    private SonyCameraPublisher imagePublisher;
+    private GestureSubscriber gestureSub;
 
     public Stream() {
         super("SonyCamera", "SonyCamera"/*, URI.create("http://10.10.10.93:11311")*/);
@@ -39,9 +36,6 @@ public class Stream extends RosActivity implements View.OnTouchListener
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.main);
-        imageSubscriber = (CompressedVideoView) findViewById(R.id.ros_camera_preview_view);
-
-        imageSubscriber.setOnTouchListener(this);
     }
 
     @Override
@@ -55,27 +49,18 @@ public class Stream extends RosActivity implements View.OnTouchListener
 
     @Override
     protected void init(NodeMainExecutor nodeMainExecutor) {
-        imagePublisher = SonyCameraPublisher.getInstance();
-        boxSubscriber = SelectionSub.getInstance();
+        gestureSub = GestureSubscriber.getInstance();
         try {
             java.net.Socket socket = new java.net.Socket(getMasterUri().getHost(), getMasterUri().getPort());
             java.net.InetAddress local_network_address = socket.getLocalAddress();
             socket.close();
             NodeConfiguration nodeConfiguration =
                     NodeConfiguration.newPublic(local_network_address.getHostAddress(), getMasterUri());
-            nodeMainExecutor.execute(imagePublisher, nodeConfiguration);
-            nodeMainExecutor.execute(imageSubscriber, nodeConfiguration);
-            nodeMainExecutor.execute(boxSubscriber, nodeConfiguration);
+            nodeMainExecutor.execute(gestureSub, nodeConfiguration);
         } catch (IOException e) {
             // Socket problem
             Log.e("Camera Tutorial", "socket error trying to get networking information from the master uri");
         }
     }
-
-    @Override
-    public boolean onTouch(View view, MotionEvent motionEvent) {
-        SampleCameraControl.moveSquare((int)(motionEvent.getX() / view.getWidth() * 400),
-                (int)(motionEvent.getY() / view.getHeight() * 100));
-        return false;
-    }
 }
+

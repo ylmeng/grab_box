@@ -37,7 +37,6 @@ public final class SampleExtensionService extends ExtensionService {
     @Override
     public ControlExtension createControlExtension(
             final String hostAppPackageName) {
-        Log.d(Constants.LOG_TAG, "The fuck does this do");
         boolean isApiSupported = DeviceInfoHelper
                 .isSmartEyeglassScreenSupported(this, hostAppPackageName);
         if (isApiSupported) {
