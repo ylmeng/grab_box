@@ -25,7 +25,6 @@ public class Stream extends RosActivity
     private BallMotionSubscriber ballMotionSub;
     private CompressedVideoView imageSubscriber;
     private SonyCameraPublisher imagePublisher;
-    private ImageAroundBallPublisher imageAroundBallPub;
 
     public Stream() {
         super("SonyCamera", "SonyCamera");
@@ -59,7 +58,6 @@ public class Stream extends RosActivity
         gestureSub = GestureSubscriber.getInstance();
         ballMotionSub = BallMotionSubscriber.getInstance();
         imagePublisher = SonyCameraPublisher.getInstance();
-        imageAroundBallPub = ImageAroundBallPublisher.getInstance();
 
         try {
 
@@ -71,7 +69,6 @@ public class Stream extends RosActivity
             nodeMainExecutor.execute(gestureSub, nodeConfiguration);
             nodeMainExecutor.execute(ballMotionSub, nodeConfiguration);
             nodeMainExecutor.execute(imagePublisher, nodeConfiguration);
-            nodeMainExecutor.execute(imageAroundBallPub, nodeConfiguration);
             nodeMainExecutor.execute(imageSubscriber, nodeConfiguration);
 
         } catch (IOException e) {

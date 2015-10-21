@@ -37,16 +37,13 @@ public class SonyCameraPublisher implements NodeMain {
     private Publisher<CompressedImage> imagePublisher;
     private Publisher<sensor_msgs.CameraInfo> cameraInfoPublisher;
     private byte[] rawImageBuffer;
-    private Camera.Size rawImageSize;
-    private YuvImage yuvImage;
-    private Rect rect;
     private ChannelBufferOutputStream stream;
-    private ImageAroundBallPublisher imageAroundBallPub;
+
+    private int cropWidth = 200, cropHeight = 200;
 
     private static SonyCameraPublisher instance = null;
 
     private SonyCameraPublisher() {
-        imageAroundBallPub = ImageAroundBallPublisher.getInstance();
     }
 
     public static SonyCameraPublisher getInstance() {
@@ -56,7 +53,6 @@ public class SonyCameraPublisher implements NodeMain {
                     instance = new SonyCameraPublisher();
                 }
             }
-
         }
         return instance;
     }
@@ -70,7 +66,7 @@ public class SonyCameraPublisher implements NodeMain {
     @Override
     public void onStart(final ConnectedNode connectedNode) {
         this.connectedNode = connectedNode;
-        NameResolver resolver = connectedNode.getResolver().newChild("camera");
+        NameResolver resolver = connectedNode.getResolver().newChild("/ball_mover/camera");
         imagePublisher =
                 connectedNode.newPublisher(resolver.resolve("image/compressed"),
                         sensor_msgs.CompressedImage._TYPE);
@@ -99,19 +95,16 @@ public class SonyCameraPublisher implements NodeMain {
         Preconditions.checkNotNull(data);
         //Preconditions.checkNotNull(size);
 
-        if (data != rawImageBuffer /*|| !size.equals(rawImageSize)*/) {
+        if (data != rawImageBuffer) {
             rawImageBuffer = data;
-            //rawImageSize = size;
-            //yuvImage = new YuvImage(rawImageBuffer, ImageFormat.NV21, width, height, null);
-            //rect = new Rect(0, 0, width, height);
-
-            drawSquareOnRaw();
         }
-        
+
+        cropImageBuffer();
+
         Time currentTime = connectedNode.getCurrentTime();
         String frameId = "camera";
 
-        sensor_msgs.CompressedImage image = imagePublisher.newMessage();
+        CompressedImage image = imagePublisher.newMessage();
         image.setFormat("jpeg");
         image.getHeader().setStamp(currentTime);
         image.getHeader().setFrameId(frameId);
@@ -134,34 +127,27 @@ public class SonyCameraPublisher implements NodeMain {
         cameraInfo.getHeader().setStamp(currentTime);
         cameraInfo.getHeader().setFrameId(frameId);
 
-        cameraInfo.setWidth(width);
-        cameraInfo.setHeight(height);
+        cameraInfo.setWidth(cropWidth);
+        cameraInfo.setHeight(cropHeight);
         cameraInfoPublisher.publish(cameraInfo);
     }
 
-    void drawSquareOnRaw() {
+    /**
+     * converts the byte array to a bitmap, crops it, and converts it back to
+     * a byte array to be shipped as a sensor_msgs.Image
+     */
+    void cropImageBuffer() {
+        Bitmap full_scene = BitmapFactory.decodeByteArray(rawImageBuffer, 0, rawImageBuffer.length);
 
-        Bitmap bmp = BitmapFactory.decodeByteArray(rawImageBuffer, 0, rawImageBuffer.length);
-        Bitmap mutableBitmap = bmp.copy(Bitmap.Config.RGB_565, true);
-
-        Canvas canvas = new Canvas(mutableBitmap);
-
-        Paint paint = new Paint();
-        paint.setStyle(Paint.Style.FILL);
-        paint.setStrokeWidth(2);
-        paint.setColor(Color.WHITE);
-
-        Rect center = new Rect(SampleCameraControl.xtrans - 10, SampleCameraControl.ytrans - 10,
-                SampleCameraControl.xtrans + 10, SampleCameraControl.ytrans + 10);
-
-        canvas.drawRect(center, paint);
-
-        imageAroundBallPub.cropAndPublish(mutableBitmap);
+        Bitmap bmpAroundObj= Bitmap.createBitmap(cropWidth, cropHeight, full_scene.getConfig());
+        Ball b =  BallMotionSubscriber.getInstance().getBall();
+        new Canvas(bmpAroundObj).drawBitmap(full_scene, cropWidth - Ball.XTRANS - (int) b.getX(),
+                cropHeight - Ball.YTRANS - (int) b.getY(), null);
 
         ByteArrayOutputStream local_stream = new ByteArrayOutputStream();
-        mutableBitmap.compress(Bitmap.CompressFormat.PNG, 100, local_stream);
+        bmpAroundObj.compress(Bitmap.CompressFormat.JPEG, 100, local_stream);
         rawImageBuffer = local_stream.toByteArray();
 
-        mutableBitmap.recycle();
+        bmpAroundObj.recycle();
     }
 }

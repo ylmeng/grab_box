@@ -227,8 +227,8 @@ public final class SampleCameraControl extends ControlExtension {
 
         Canvas canvas = new Canvas(bmp);
         Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
-        canvas.drawBitmap(box_bmp, (int) BallMotionSubscriber.getInstance().getBall().getX(),
-            (int) BallMotionSubscriber.getInstance().getBall().getY(), paint);
+        canvas.drawBitmap(box_bmp, (int) BallMotionSubscriber.getInstance().getBall().getX() - box_bmp.getWidth()/2,
+            (int) BallMotionSubscriber.getInstance().getBall().getY() - box_bmp.getWidth()/2, paint);
 
         showBitmap(bmp);
     }

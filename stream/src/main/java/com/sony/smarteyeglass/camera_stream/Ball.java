@@ -13,8 +13,8 @@ public class Ball {
     //possibly velocity
 
     public Ball() {
-        //setX(419/2);
-        //setY(138/2);
+        setX(0);
+        setY(0);
     }
 
     public void setCenter(double x, double y) {
@@ -27,7 +27,7 @@ public class Ball {
     }
 
     public void moveCenterBy(double x, double y) {
-        setCenter(x + this.x, y + this.y);
+        setCenter(3*x + this.x, 3*y + this.y);
     }
 
     public void moveCenterBy(geometry_msgs.Point point) {
@@ -35,21 +35,21 @@ public class Ball {
     }
 
     public boolean setX(double x) {
-        if(x <= 419 && x >= 0) {
+        if(x <= 319 && x >= 0) {
             this.x = x;
             return true;
         } else {
-            Log.d("mySony", "Did not move ball's x because it reached the upper bound");
+            Log.d("mySony", "Did not move ball's x because it reached a bound");
             return false;
         }
     }
 
     public boolean setY(double y) {
-        if(y <= 138 && y >= 0) {
+        if(y <= 118 && y >= 0) {
             this.y = y;
             return true;
         } else {
-            Log.d("mySony", "Did not move ball's x because it reached the upper bound");
+            Log.d("mySony", "Did not move ball's y because it reached a bound");
             return false;
         }
     }

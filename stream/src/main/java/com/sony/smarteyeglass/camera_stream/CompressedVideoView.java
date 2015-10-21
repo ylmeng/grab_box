@@ -48,8 +48,8 @@ public class CompressedVideoView extends SurfaceView implements SurfaceHolder.Ca
 
     private void initialize() {
         cameraSub = null;
-        rootNodeName = "/camera";
-        topicName="/camera/image";
+        rootNodeName = "/ball_mover/camera";
+        topicName="/ball_mover/camera/image";
 
         pushThread = new ThreadPoolExecutor(1, 1,                        // use only a single thread
         30,TimeUnit.MILLISECONDS,    // timeout after 30mS (33mS is the max time of a single frame at 30fps)
