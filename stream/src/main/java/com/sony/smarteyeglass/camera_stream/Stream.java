@@ -22,9 +22,13 @@ import java.io.IOException;
 public class Stream extends RosActivity
 {
     private GestureSubscriber gestureSub;
+    private BallMotionSubscriber ballMotionSub;
+    private CompressedVideoView imageSubscriber;
+    private SonyCameraPublisher imagePublisher;
+    private ImageAroundBallPublisher imageAroundBallPub;
 
     public Stream() {
-        super("SonyCamera", "SonyCamera"/*, URI.create("http://10.10.10.93:11311")*/);
+        super("SonyCamera", "SonyCamera");
 	}
 
     @Override
@@ -36,6 +40,7 @@ public class Stream extends RosActivity
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         setContentView(R.layout.main);
+        imageSubscriber = (CompressedVideoView) findViewById(R.id.ros_camera_preview_view);
     }
 
     @Override
@@ -49,14 +54,26 @@ public class Stream extends RosActivity
 
     @Override
     protected void init(NodeMainExecutor nodeMainExecutor) {
+
+        //instantiates ros objects
         gestureSub = GestureSubscriber.getInstance();
+        ballMotionSub = BallMotionSubscriber.getInstance();
+        imagePublisher = SonyCameraPublisher.getInstance();
+        imageAroundBallPub = ImageAroundBallPublisher.getInstance();
+
         try {
+
             java.net.Socket socket = new java.net.Socket(getMasterUri().getHost(), getMasterUri().getPort());
             java.net.InetAddress local_network_address = socket.getLocalAddress();
             socket.close();
             NodeConfiguration nodeConfiguration =
                     NodeConfiguration.newPublic(local_network_address.getHostAddress(), getMasterUri());
             nodeMainExecutor.execute(gestureSub, nodeConfiguration);
+            nodeMainExecutor.execute(ballMotionSub, nodeConfiguration);
+            nodeMainExecutor.execute(imagePublisher, nodeConfiguration);
+            nodeMainExecutor.execute(imageAroundBallPub, nodeConfiguration);
+            nodeMainExecutor.execute(imageSubscriber, nodeConfiguration);
+
         } catch (IOException e) {
             // Socket problem
             Log.e("Camera Tutorial", "socket error trying to get networking information from the master uri");

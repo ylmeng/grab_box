@@ -51,8 +51,16 @@ public final class SampleCameraControl extends ControlExtension {
     /** Uses SmartEyeglass API version*/
     private static final int SMARTEYEGLASS_API_VERSION = 3;
 
-    private int width = 419, height = 138;
+    private SonyCameraPublisher imagePublisher;
+
+    enum State {LVL1, LVL1COMPLETE};
+    State gameState = State.LVL1;
+
+    private int width, height;
     boolean completedTask;
+
+    public static int xtrans = 195, ytrans = 135;
+    boolean movingX = true;
 
     public static SampleCameraControl getInstance() {
         return instance;
@@ -69,13 +77,51 @@ public final class SampleCameraControl extends ControlExtension {
         super(context, hostAppPackageName);
 
         this.context = context;
+        width = context.getResources().getDimensionPixelSize(R.dimen.smarteyeglass_control_width);
+        height = context.getResources().getDimensionPixelSize(R.dimen.smarteyeglass_control_height);
 
         instance = this;
+        imagePublisher = SonyCameraPublisher.getInstance();
 
-        utils = new SmartEyeglassControlUtils(hostAppPackageName, new SmartEyeglassEventListener());
+        SmartEyeglassEventListener listener = new SmartEyeglassEventListener() {
+
+            int skipper = 0;
+            // When camera operation has succeeded
+            // handle result according to current recording mode
+            @Override
+            public void onCameraReceived(final CameraEvent event) {
+                if(skipper++ > 25) {
+                    skipper = 0;
+                    return;
+                }
+                imagePublisher.onNewRawImage(event.getData(), 320, 240);
+                updateDisplay();
+            }
+            // Called when camera operation has failed
+            // We just log the error
+            @Override
+            public void onCameraErrorReceived(final int error) {
+                Log.d(Constants.LOG_TAG, "onCameraErrorReceived: " + error);
+            }
+            // When camera is set to record image to a file,
+            // log the operation and clean up
+            @Override
+            public void onCameraReceivedFile(final String filePath) {
+                Log.d(Constants.LOG_TAG, "onCameraReceivedFile: " + filePath);
+                //mode.closeCamera(utils);
+            }
+        };
+
+        utils = new SmartEyeglassControlUtils(hostAppPackageName, listener);
         utils.setRequiredApiVersion(SMARTEYEGLASS_API_VERSION);
         utils.activate(context);
-        utils.setPowerMode(SmartEyeglassControl.Intents.POWER_MODE_NORMAL);
+        utils.setPowerMode(SmartEyeglassControl.Intents.POWER_MODE_HIGH);
+
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
 
         Log.d(Constants.LOG_TAG, "Done setting up utils");
     }
@@ -96,14 +142,13 @@ public final class SampleCameraControl extends ControlExtension {
 
         Log.d(Constants.LOG_TAG, "Preparing to set camera mode ");
 
-        /* enable for camera
-        utils.setCameraMode(1, 6, 3);
+        utils.setCameraMode(1, 6, 2);
         try {
             utils.startCamera();
         } catch (ControlCameraException e) {
             e.printStackTrace();
         }
-        */
+
         Log.d(Constants.LOG_TAG, "Camera Mode set ");
 
         drawBox();
@@ -115,8 +160,9 @@ public final class SampleCameraControl extends ControlExtension {
             return;
         }
 
-        completedTask = false;
-        drawBox();
+        //movingX = !movingX;
+        gameState = State.LVL1;
+        //completedTask = false;
     }
 
     // Stop showing animation and listening for sensor data
@@ -126,10 +172,26 @@ public final class SampleCameraControl extends ControlExtension {
         utils.stopCamera();
     }
 
+    //int increment = 10;
     @Override
     public void onTouch(final ControlTouchEvent ev) {
         super.onTouch(ev);
 
+//        if(ev.getAction() == Control.Intents.SWIPE_DIRECTION_LEFT) {
+//            if(movingX) {
+//                xtrans += increment;
+//            } else {
+//                ytrans += increment;
+//            }
+//        } else if(ev.getAction() == Control.Intents.SWIPE_DIRECTION_RIGHT) {
+//            if(movingX) {
+//                xtrans -= increment;
+//            } else {
+//                ytrans -= increment;
+//            }
+//        }
+
+        //Log.d("cmon", "xtrans: " + xtrans + " ytrans: " + ytrans);
     }
 
     @Override
@@ -148,9 +210,14 @@ public final class SampleCameraControl extends ControlExtension {
         return b;
     }
 
-    void updateDisplay() {
-        if(!completedTask) {
-            drawBox();
+    public void updateDisplay() {
+        switch(gameState) {
+            case LVL1:
+                drawBox();
+                break;
+            case LVL1COMPLETE:
+                showText("Great Job!");
+                break;
         }
     }
 
@@ -158,11 +225,10 @@ public final class SampleCameraControl extends ControlExtension {
         Bitmap box_bmp = getBitmapResource(R.drawable.box);
         Bitmap bmp = Bitmap.createBitmap(width, height, box_bmp.getConfig());
 
-        Log.d("handle", box_bmp.getWidth() + " " + box_bmp.getHeight());
-
         Canvas canvas = new Canvas(bmp);
         Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
-        canvas.drawBitmap(box_bmp, width/2 - box_bmp.getWidth()/2, height / 2 - box_bmp.getHeight() / 2, paint);
+        canvas.drawBitmap(box_bmp, (int) BallMotionSubscriber.getInstance().getBall().getX(),
+            (int) BallMotionSubscriber.getInstance().getBall().getY(), paint);
 
         showBitmap(bmp);
     }
@@ -191,14 +257,7 @@ public final class SampleCameraControl extends ControlExtension {
 
     public void handleGesture(int pose_num) {
         if(pose_num == 1) {
-            completedTask = true;
-        }
-
-        if(completedTask) {
-            showText("Great job!");
-        } else {
-            drawBox();
+            gameState = State.LVL1COMPLETE;
         }
     }
 }
-

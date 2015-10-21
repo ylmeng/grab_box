@@ -3,6 +3,8 @@ package com.sony.smarteyeglass.camera_stream;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.graphics.Rect;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -32,7 +34,7 @@ public class CompressedVideoView extends SurfaceView implements SurfaceHolder.Ca
     private static final String LOG_TAG = "CompressedVideoView";
     private String rootNodeName, topicName;
     private ExecutorService pushThread;
-        private Subscriber<CompressedImage> cameraSub;
+    private Subscriber<CompressedImage> cameraSub;
 
     public CompressedVideoView(Context context) {
         super(context);
@@ -96,12 +98,16 @@ public class CompressedVideoView extends SurfaceView implements SurfaceHolder.Ca
                         public void run() {
                             Thread.currentThread().setPriority(Thread.NORM_PRIORITY + 1);
                             final SurfaceHolder holder = getHolder();
+
                             Canvas c = holder.lockCanvas();
                             if (holder != null && c != null) {
+
                                 BitmapFromCompressedImage bf = new BitmapFromCompressedImage();
                                 Bitmap bitmap = bf.call(compressedImage);
+
                                 Rect dest = new Rect(0, 0, getWidth(), getHeight());
                                 c.drawBitmap(bitmap, null, dest, null);
+
                                 holder.unlockCanvasAndPost(c);
                             }
                         }
