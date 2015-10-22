@@ -35,7 +35,7 @@ public class Ball {
     }
 
     public boolean setX(double x) {
-        if(x <= 319 && x >= 0) {
+        if(x <= 190 && x >= 0) {
             this.x = x;
             return true;
         } else {
