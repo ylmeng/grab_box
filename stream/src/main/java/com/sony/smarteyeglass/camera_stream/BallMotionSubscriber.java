@@ -9,8 +9,6 @@ import org.ros.node.Node;
 import org.ros.node.NodeMain;
 import org.ros.node.topic.Subscriber;
 
-import geometry_msgs.Point;
-
 /**
  * Created by chris on 9/18/15.
  */
@@ -33,17 +31,20 @@ public class BallMotionSubscriber implements NodeMain {
 
     @Override
     public void onStart(ConnectedNode connectedNode) {
-        Subscriber<geometry_msgs.Point> subscriber = connectedNode.newSubscriber("/ball_mover/changeBallCoordBy", geometry_msgs.Point._TYPE);
-        subscriber.addMessageListener(new MessageListener<geometry_msgs.Point>() {
+        Subscriber<std_msgs.Bool> subscriber = connectedNode.newSubscriber("/ball_mover/isHandPresent", std_msgs.Bool._TYPE);
+        subscriber.addMessageListener(new MessageListener<std_msgs.Bool>() {
             @Override
-            public void onNewMessage(geometry_msgs.Point message) {
+            public void onNewMessage(std_msgs.Bool message) {
 
                 //ball was not set so we cannot move it yet
                 if(ball == null) {
                     return;
                 }
 
-                ball.moveCenterBy(message);
+                //if the hand is present & the correct gesture is being made
+                if(message.getData() && GestureSubscriber.getInstance().lastGesture == GestureSubscriber.LSHAPEDSTRETCH) {
+                    SampleCameraControl.getInstance().proceed();
+                }
 
                 Log.d(Constants.LOG_TAG, "I heard: \"" + message + "\"");
             }

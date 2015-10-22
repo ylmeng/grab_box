@@ -57,10 +57,8 @@ public final class SampleCameraControl extends ControlExtension {
     State gameState = State.LVL1;
 
     private int width, height;
-    boolean completedTask;
 
-    public static int xtrans = 195, ytrans = 135;
-    boolean movingX = true;
+    public static int xtrans = 195, ytrans = 135, focus = 6;
 
     public static SampleCameraControl getInstance() {
         return instance;
@@ -108,13 +106,13 @@ public final class SampleCameraControl extends ControlExtension {
             @Override
             public void onCameraReceivedFile(final String filePath) {
                 Log.d(Constants.LOG_TAG, "onCameraReceivedFile: " + filePath);
-                //mode.closeCamera(utils);
             }
         };
 
         utils = new SmartEyeglassControlUtils(hostAppPackageName, listener);
         utils.setRequiredApiVersion(SMARTEYEGLASS_API_VERSION);
         utils.activate(context);
+        utils.setScreenDepth(focus); //sets the projection distance to ~1 meter
         utils.setPowerMode(SmartEyeglassControl.Intents.POWER_MODE_HIGH);
 
         try {
@@ -142,7 +140,12 @@ public final class SampleCameraControl extends ControlExtension {
 
         Log.d(Constants.LOG_TAG, "Preparing to set camera mode ");
 
-        utils.setCameraMode(1, 6, 2);
+
+        utils.setCameraMode(
+                SmartEyeglassControl.Intents.CAMERA_JPEG_QUALITY_STANDARD,
+                SmartEyeglassControl.Intents.CAMERA_RESOLUTION_QVGA,
+                SmartEyeglassControl.Intents.CAMERA_MODE_JPG_STREAM_LOW_RATE);
+
         try {
             utils.startCamera();
         } catch (ControlCameraException e) {
@@ -160,9 +163,7 @@ public final class SampleCameraControl extends ControlExtension {
             return;
         }
 
-        //movingX = !movingX;
         gameState = State.LVL1;
-        //completedTask = false;
     }
 
     // Stop showing animation and listening for sensor data
@@ -172,26 +173,24 @@ public final class SampleCameraControl extends ControlExtension {
         utils.stopCamera();
     }
 
-    //int increment = 10;
+    /**
+     * adjusts display parameters when device is swiped
+     * more specifically, adjusts the projection distance of images displayed in the glass
+     * @param ev contains information about the touch event
+     */
     @Override
     public void onTouch(final ControlTouchEvent ev) {
         super.onTouch(ev);
 
-//        if(ev.getAction() == Control.Intents.SWIPE_DIRECTION_LEFT) {
-//            if(movingX) {
-//                xtrans += increment;
-//            } else {
-//                ytrans += increment;
-//            }
-//        } else if(ev.getAction() == Control.Intents.SWIPE_DIRECTION_RIGHT) {
-//            if(movingX) {
-//                xtrans -= increment;
-//            } else {
-//                ytrans -= increment;
-//            }
-//        }
+        if(ev.getAction() == Control.Intents.SWIPE_DIRECTION_LEFT) {
+            focus--;
+        } else if(ev.getAction() == Control.Intents.SWIPE_DIRECTION_RIGHT) {
+            focus++;
+        }
 
-        //Log.d("cmon", "xtrans: " + xtrans + " ytrans: " + ytrans);
+        Log.d("mySony", "setting screen depth to: " + focus);
+
+        utils.setScreenDepth(focus);
     }
 
     @Override
@@ -255,9 +254,7 @@ public final class SampleCameraControl extends ControlExtension {
         showBitmap(bmp);
     }
 
-    public void handleGesture(int pose_num) {
-        if(pose_num == 1) {
-            gameState = State.LVL1COMPLETE;
-        }
+    public void proceed() {
+        gameState = State.LVL1COMPLETE;
     }
 }

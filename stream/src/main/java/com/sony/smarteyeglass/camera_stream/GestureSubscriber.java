@@ -17,8 +17,12 @@ import std_msgs.Int32;
 
 public class GestureSubscriber implements NodeMain {
 
+    /* static reference to the only gesture subscriber that should be in use */
     public static GestureSubscriber instance;
-    public static int lastGesture = 0;
+
+    /* contains the last pose number read from myo */
+    public int lastGesture = 0;
+    public static int LSHAPEDSTRETCH = 1;
 
     public static GestureSubscriber getInstance() {
         if(instance == null) {
@@ -38,7 +42,6 @@ public class GestureSubscriber implements NodeMain {
             @Override
             public void onNewMessage(std_msgs.Int32 message) {
                 lastGesture = message.getData();
-                SampleCameraControl.getInstance().handleGesture(lastGesture);
                 Log.d(Constants.LOG_TAG, "I heard: \"" + message + "\"");
             }
         });
