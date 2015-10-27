@@ -41,11 +41,6 @@ public class BallMotionSubscriber implements NodeMain {
                     return;
                 }
 
-                //if the hand is present & the correct gesture is being made
-                if(message.getData() && GestureSubscriber.getInstance().lastGesture == GestureSubscriber.LSHAPEDSTRETCH) {
-                    SampleCameraControl.getInstance().proceed();
-                }
-
                 Log.d(Constants.LOG_TAG, "I heard: \"" + message + "\"");
             }
         });

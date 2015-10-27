@@ -86,12 +86,19 @@ public final class SampleCameraControl extends ControlExtension {
 
         SmartEyeglassEventListener listener = new SmartEyeglassEventListener() {
 
+            int skipFrame = 0;
             // When camera operation has succeeded
             // handle result according to current recording mode
             @Override
             public void onCameraReceived(final CameraEvent event) {
+
+                if(skipFrame++ > 2) {
+                    skipFrame = 0;
+                    return;
+                }
+
                 imagePublisher.onNewRawImage(event.getData(), 320, 240);
-                drawBitmap();
+                drawBox();
             }
             // Called when camera operation has failed
             // We just log the error
@@ -278,10 +285,13 @@ public final class SampleCameraControl extends ControlExtension {
         Bitmap box_bmp = getBitmapResource(R.drawable.ball);
         Bitmap bmp = Bitmap.createBitmap(width, height, box_bmp.getConfig());
 
+        int warpedX = (int)(TipPointSubscriber.getInstance().getBall().getX() * xmag + xtrans);
+        int warpedY = (int)(TipPointSubscriber.getInstance().getBall().getY() * ymag + ytrans);
+
         Canvas canvas = new Canvas(bmp);
         Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
-        canvas.drawBitmap(box_bmp, (int) TipPointSubscriber.getInstance().getBall().getX() - box_bmp.getWidth()/2,
-            (int) TipPointSubscriber.getInstance().getBall().getY() - box_bmp.getWidth()/2, paint);
+        canvas.drawBitmap(box_bmp, warpedX - box_bmp.getWidth()/2,
+            warpedY - box_bmp.getHeight()/2, paint);
 
         showBitmap(bmp);
     }
