@@ -22,7 +22,7 @@ import java.io.IOException;
 public class Stream extends RosActivity
 {
     private GestureSubscriber gestureSub;
-    private BallMotionSubscriber ballMotionSub;
+    private TipPointSubscriber tipPointSub;
     private CompressedVideoView imageSubscriber;
     private SonyCameraPublisher imagePublisher;
 
@@ -56,7 +56,7 @@ public class Stream extends RosActivity
 
         //instantiates ros objects
         gestureSub = GestureSubscriber.getInstance();
-        ballMotionSub = BallMotionSubscriber.getInstance();
+        tipPointSub = TipPointSubscriber.getInstance();
         imagePublisher = SonyCameraPublisher.getInstance();
 
         try {
@@ -67,7 +67,7 @@ public class Stream extends RosActivity
             NodeConfiguration nodeConfiguration =
                     NodeConfiguration.newPublic(local_network_address.getHostAddress(), getMasterUri());
             nodeMainExecutor.execute(gestureSub, nodeConfiguration);
-            nodeMainExecutor.execute(ballMotionSub, nodeConfiguration);
+            nodeMainExecutor.execute(tipPointSub, nodeConfiguration);
             nodeMainExecutor.execute(imagePublisher, nodeConfiguration);
             nodeMainExecutor.execute(imageSubscriber, nodeConfiguration);
 

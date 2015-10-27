@@ -35,6 +35,7 @@ import com.sonyericsson.extras.liveware.extension.util.sensor.AccessorySensorMan
 
 /**
  * Shows how to access the SmartEyeglass camera to capture pictures.
+ * Shows how to access the SmartEyeglass camera to capture pictures.
  * Demonstrates how to listen to camera events, process
  * camera data, display pictures, and store image data to external storage.
  */
@@ -58,7 +59,9 @@ public final class SampleCameraControl extends ControlExtension {
 
     private int width, height;
 
-    public static int xtrans = 195, ytrans = 135, focus = 6;
+    public static int xtrans = -550, ytrans = -605, focus = 6, option = 0;
+
+    public static double xmag = 3.75, ymag = 3.025;
 
     public static SampleCameraControl getInstance() {
         return instance;
@@ -83,17 +86,12 @@ public final class SampleCameraControl extends ControlExtension {
 
         SmartEyeglassEventListener listener = new SmartEyeglassEventListener() {
 
-            int skipper = 0;
             // When camera operation has succeeded
             // handle result according to current recording mode
             @Override
             public void onCameraReceived(final CameraEvent event) {
-                if(skipper++ > 25) {
-                    skipper = 0;
-                    return;
-                }
                 imagePublisher.onNewRawImage(event.getData(), 320, 240);
-                updateDisplay();
+                drawBitmap();
             }
             // Called when camera operation has failed
             // We just log the error
@@ -163,7 +161,12 @@ public final class SampleCameraControl extends ControlExtension {
             return;
         }
 
-        gameState = State.LVL1;
+        if(++option > 4) {
+            option = 0;
+        }
+
+        Log.d("mySony", "xmag: " + xmag + "ymag: " + ymag + "xtrans: " + xtrans + "ytrans: " + ytrans);
+//        gameState = State.LVL1;
     }
 
     // Stop showing animation and listening for sensor data
@@ -181,11 +184,47 @@ public final class SampleCameraControl extends ControlExtension {
     @Override
     public void onTouch(final ControlTouchEvent ev) {
         super.onTouch(ev);
+    }
 
-        if(ev.getAction() == Control.Intents.SWIPE_DIRECTION_LEFT) {
-            focus--;
-        } else if(ev.getAction() == Control.Intents.SWIPE_DIRECTION_RIGHT) {
-            focus++;
+    @Override
+    public void onSwipe(int direction) {
+
+        switch(option) {
+            case 0:
+                if (direction == Control.Intents.SWIPE_DIRECTION_LEFT) {
+                    xmag -= .025;
+                } else if (direction == Control.Intents.SWIPE_DIRECTION_RIGHT) {
+                    xmag += .025;
+                }
+                break;
+            case 1:
+                if (direction == Control.Intents.SWIPE_DIRECTION_LEFT) {
+                    ymag -= .025;
+                } else if (direction == Control.Intents.SWIPE_DIRECTION_RIGHT) {
+                    ymag += .025;
+                }
+                break;
+            case 2:
+                if (direction == Control.Intents.SWIPE_DIRECTION_LEFT) {
+                    xtrans -= 5;
+                } else if (direction == Control.Intents.SWIPE_DIRECTION_RIGHT) {
+                    xtrans += 5;
+                }
+                break;
+            case 3:
+                if (direction == Control.Intents.SWIPE_DIRECTION_LEFT) {
+                    ytrans -= 5;
+                } else if (direction == Control.Intents.SWIPE_DIRECTION_RIGHT) {
+                    ytrans += 5;
+                }
+                break;
+            case 4:
+                if (direction == Control.Intents.SWIPE_DIRECTION_LEFT) {
+                    focus--;
+                } else if (direction == Control.Intents.SWIPE_DIRECTION_RIGHT) {
+                    focus++;
+                }
+                break;
         }
 
         Log.d("mySony", "setting screen depth to: " + focus);
@@ -220,14 +259,29 @@ public final class SampleCameraControl extends ControlExtension {
         }
     }
 
+    public void drawBitmap() {
+        Log.d("mySony", "drawing bitmap");
+        Bitmap bmp = CompressedVideoView.bitmap;
+
+        if(bmp == null) { return; }
+
+        Bitmap scaled = Bitmap.createScaledBitmap(bmp, (int) (bmp.getWidth() * xmag), (int)(bmp.getHeight() * ymag), false);
+        Bitmap background = Bitmap.createBitmap(width, height, bmp.getConfig());
+
+        Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
+        new Canvas(background).drawBitmap(scaled, xtrans, ytrans, paint);
+        showBitmap(background);
+
+    }
+
     public void drawBox() {
-        Bitmap box_bmp = getBitmapResource(R.drawable.box);
+        Bitmap box_bmp = getBitmapResource(R.drawable.ball);
         Bitmap bmp = Bitmap.createBitmap(width, height, box_bmp.getConfig());
 
         Canvas canvas = new Canvas(bmp);
         Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
-        canvas.drawBitmap(box_bmp, (int) BallMotionSubscriber.getInstance().getBall().getX() - box_bmp.getWidth()/2,
-            (int) BallMotionSubscriber.getInstance().getBall().getY() - box_bmp.getWidth()/2, paint);
+        canvas.drawBitmap(box_bmp, (int) TipPointSubscriber.getInstance().getBall().getX() - box_bmp.getWidth()/2,
+            (int) TipPointSubscriber.getInstance().getBall().getY() - box_bmp.getWidth()/2, paint);
 
         showBitmap(bmp);
     }

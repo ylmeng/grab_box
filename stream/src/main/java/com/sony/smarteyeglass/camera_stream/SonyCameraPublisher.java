@@ -99,8 +99,6 @@ public class SonyCameraPublisher implements NodeMain {
             rawImageBuffer = data;
         }
 
-        cropImageBuffer();
-
         Time currentTime = connectedNode.getCurrentTime();
         String frameId = "camera";
 
@@ -130,24 +128,5 @@ public class SonyCameraPublisher implements NodeMain {
         cameraInfo.setWidth(cropWidth);
         cameraInfo.setHeight(cropHeight);
         cameraInfoPublisher.publish(cameraInfo);
-    }
-
-    /**
-     * converts the byte array to a bitmap, crops it, and converts it back to
-     * a byte array to be shipped as a sensor_msgs.Image
-     */
-    void cropImageBuffer() {
-        Bitmap full_scene = BitmapFactory.decodeByteArray(rawImageBuffer, 0, rawImageBuffer.length);
-
-        Bitmap bmpAroundObj= Bitmap.createBitmap(cropWidth, cropHeight, full_scene.getConfig());
-        Ball b =  BallMotionSubscriber.getInstance().getBall();
-        new Canvas(bmpAroundObj).drawBitmap(full_scene, cropWidth - Ball.XTRANS - (int) b.getX(),
-                cropHeight - Ball.YTRANS - (int) b.getY(), null);
-
-        ByteArrayOutputStream local_stream = new ByteArrayOutputStream();
-        bmpAroundObj.compress(Bitmap.CompressFormat.JPEG, 100, local_stream);
-        rawImageBuffer = local_stream.toByteArray();
-
-        bmpAroundObj.recycle();
     }
 }

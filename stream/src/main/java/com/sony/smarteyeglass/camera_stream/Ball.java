@@ -7,13 +7,14 @@ import android.util.Log;
  */
 public class Ball {
     public static final int XTRANS = 195, YTRANS = 135;
+    public static final int NOT_FOUND_COORD = -1337;
 
     /*the coordinates of center point of the object*/
     private double x, y;
 
     public Ball() {
-        setX(190);
-        setY(20);
+        setX(NOT_FOUND_COORD);
+        setY(NOT_FOUND_COORD);
     }
 
     /**
@@ -42,13 +43,8 @@ public class Ball {
      * @return a boolean describing if the argument provided was too large/small
      */
     public boolean setX(double x) {
-        if(x <= 190 && x >= 0) {
-            this.x = x;
-            return true;
-        } else {
-            Log.d("mySony", "Did not move ball's x because it reached a bound");
-            return false;
-        }
+        this.x = x;
+        return true;
     }
 
     /**
@@ -57,13 +53,8 @@ public class Ball {
      * @return a boolean describing if the argument provided was too large/small
      */
     public boolean setY(double y) {
-        if(y <= 118 && y >= 0) {
-            this.y = y;
-            return true;
-        } else {
-            Log.d("mySony", "Did not move ball's y because it reached a bound");
-            return false;
-        }
+        this.y = y;
+        return true;
     }
 
     /**

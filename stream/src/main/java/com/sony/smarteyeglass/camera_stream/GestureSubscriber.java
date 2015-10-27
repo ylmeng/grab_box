@@ -22,7 +22,7 @@ public class GestureSubscriber implements NodeMain {
 
     /* contains the last pose number read from myo */
     public int lastGesture = 0;
-    public static int LSHAPEDSTRETCH = 1;
+    public static int GRASPING = 1;
 
     public static GestureSubscriber getInstance() {
         if(instance == null) {

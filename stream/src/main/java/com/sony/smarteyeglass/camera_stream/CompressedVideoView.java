@@ -36,6 +36,8 @@ public class CompressedVideoView extends SurfaceView implements SurfaceHolder.Ca
     private ExecutorService pushThread;
     private Subscriber<CompressedImage> cameraSub;
 
+    public static Bitmap bitmap;
+
     public CompressedVideoView(Context context) {
         super(context);
         initialize();
@@ -48,8 +50,8 @@ public class CompressedVideoView extends SurfaceView implements SurfaceHolder.Ca
 
     private void initialize() {
         cameraSub = null;
-        rootNodeName = "/ball_mover/camera";
-        topicName="/ball_mover/camera/image";
+        rootNodeName = "/ball_mover";
+        topicName="/ball_mover/warped_compressed/compressed";
 
         pushThread = new ThreadPoolExecutor(1, 1,                        // use only a single thread
         30,TimeUnit.MILLISECONDS,    // timeout after 30mS (33mS is the max time of a single frame at 30fps)
@@ -88,7 +90,7 @@ public class CompressedVideoView extends SurfaceView implements SurfaceHolder.Ca
     @Override
     public void onStart(ConnectedNode connectedNode) {
         this.connectedNode = connectedNode;
-        cameraSub = connectedNode.newSubscriber(topicName+"/compressed", CompressedImage._TYPE);
+        cameraSub = connectedNode.newSubscriber(topicName, CompressedImage._TYPE);
         cameraSub.addMessageListener(new MessageListener<CompressedImage>() {
             @Override
             public void onNewMessage(final CompressedImage compressedImage) {
@@ -96,6 +98,7 @@ public class CompressedVideoView extends SurfaceView implements SurfaceHolder.Ca
                     pushThread.submit(new Runnable() {
                         @Override
                         public void run() {
+                            Log.d("mySony", "got an image");
                             Thread.currentThread().setPriority(Thread.NORM_PRIORITY + 1);
                             final SurfaceHolder holder = getHolder();
 
@@ -103,7 +106,9 @@ public class CompressedVideoView extends SurfaceView implements SurfaceHolder.Ca
                             if (holder != null && c != null) {
 
                                 BitmapFromCompressedImage bf = new BitmapFromCompressedImage();
-                                Bitmap bitmap = bf.call(compressedImage);
+                                bitmap = bf.call(compressedImage);
+
+                                //SampleCameraControl.getInstance().drawBitmap(bitmap.copy(bitmap.getConfig(), true));
 
                                 Rect dest = new Rect(0, 0, getWidth(), getHeight());
                                 c.drawBitmap(bitmap, null, dest, null);
