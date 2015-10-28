@@ -42,6 +42,13 @@ public class GestureSubscriber implements NodeMain {
             @Override
             public void onNewMessage(std_msgs.Int32 message) {
                 lastGesture = message.getData();
+
+                if(SampleCameraControl.getInstance() != null &&
+                        SampleCameraControl.getInstance().gameState == SampleCameraControl.State.INITIAL
+                        && lastGesture == 1) {
+                    SampleCameraControl.getInstance().gameState = SampleCameraControl.State.LVL1;
+                }
+
                 Log.d(Constants.LOG_TAG, "I heard: \"" + message + "\"");
             }
         });

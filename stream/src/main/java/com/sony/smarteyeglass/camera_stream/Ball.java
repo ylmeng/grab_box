@@ -17,6 +17,11 @@ public class Ball {
         setY(NOT_FOUND_COORD);
     }
 
+    public Ball(int x, int y) {
+        setX(x);
+        setY(y);
+    }
+
     /**
      * sets center location of the cube in reference to the coordinate system
      * displayed within the glass

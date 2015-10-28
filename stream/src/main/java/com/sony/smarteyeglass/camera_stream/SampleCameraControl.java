@@ -54,14 +54,18 @@ public final class SampleCameraControl extends ControlExtension {
 
     private SonyCameraPublisher imagePublisher;
 
-    enum State {LVL1, LVL1COMPLETE};
-    State gameState = State.LVL1;
+    enum State {
+        INITIAL, SQUEEZE, LVL1, LVLCOMPLETE;
+    };
+
+    State gameState = State.INITIAL;
+    private Ball[] objective = {new Ball(8 + 4, 138/2), new Ball(419 - 24 - 4, 138/2)};
+    private int objective_cursor = 0;
 
     private int width, height;
 
     public static int xtrans = -550, ytrans = -605, focus = 6, option = 0;
-
-    public static double xmag = 3.75, ymag = 3.025;
+    public static double xmag = 3.75, ymag = 3.02;
 
     public static SampleCameraControl getInstance() {
         return instance;
@@ -98,7 +102,7 @@ public final class SampleCameraControl extends ControlExtension {
                 }
 
                 imagePublisher.onNewRawImage(event.getData(), 320, 240);
-                drawBox();
+                updateDisplay();
             }
             // Called when camera operation has failed
             // We just log the error
@@ -159,7 +163,6 @@ public final class SampleCameraControl extends ControlExtension {
 
         Log.d(Constants.LOG_TAG, "Camera Mode set ");
 
-        drawBox();
     }
 
     @Override
@@ -168,12 +171,12 @@ public final class SampleCameraControl extends ControlExtension {
             return;
         }
 
-        if(++option > 4) {
+        if (++option > 4) {
             option = 0;
         }
 
         Log.d("mySony", "xmag: " + xmag + "ymag: " + ymag + "xtrans: " + xtrans + "ytrans: " + ytrans);
-//        gameState = State.LVL1;
+        gameState = State.INITIAL;
     }
 
     // Stop showing animation and listening for sensor data
@@ -256,15 +259,30 @@ public final class SampleCameraControl extends ControlExtension {
     }
 
     public void updateDisplay() {
+
         switch(gameState) {
-            case LVL1:
-                drawBox();
+            case INITIAL:
+                showText("Squeeze to begin.");
                 break;
-            case LVL1COMPLETE:
+
+            case LVL1:
+                drawBoard();
+                break;
+
+            case SQUEEZE:
+                showText("Squeeze!");
+                break;
+
+            case LVLCOMPLETE:
                 showText("Great Job!");
                 break;
         }
     }
+
+    /**
+     * used to draw any bitmap to the screen,
+     * used to be used to draw the warped perspective for parameter
+     * calibration, currently unused
 
     public void drawBitmap() {
         Log.d("mySony", "drawing bitmap");
@@ -280,20 +298,39 @@ public final class SampleCameraControl extends ControlExtension {
         showBitmap(background);
 
     }
+     */
 
-    public void drawBox() {
-        Bitmap box_bmp = getBitmapResource(R.drawable.ball);
-        Bitmap bmp = Bitmap.createBitmap(width, height, box_bmp.getConfig());
+    public void drawBoard() {
+        Bitmap bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bmp);
+
+        drawObjective(canvas);
+        drawBall(canvas);
+
+        showBitmap(bmp);
+    }
+
+    public void drawObjective(Canvas canvas) {
+        Bitmap objective_bmp = getBitmapResource(R.drawable.objective);
+
+        int x = (int)objective[objective_cursor].getX(),
+            y = (int)objective[objective_cursor].getY();
+
+        Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
+        canvas.drawBitmap(objective_bmp, x - objective_bmp.getWidth() / 2,
+                y - objective_bmp.getHeight() / 2, paint);
+    }
+
+    public void drawBall(Canvas canvas) {
+        Bitmap ball_bmp = getBitmapResource(R.drawable.ball);
+        Log.d("mySony", "config: " + ball_bmp.getConfig());
 
         int warpedX = (int)(TipPointSubscriber.getInstance().getBall().getX() * xmag + xtrans);
         int warpedY = (int)(TipPointSubscriber.getInstance().getBall().getY() * ymag + ytrans);
 
-        Canvas canvas = new Canvas(bmp);
         Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
-        canvas.drawBitmap(box_bmp, warpedX - box_bmp.getWidth()/2,
-            warpedY - box_bmp.getHeight()/2, paint);
-
-        showBitmap(bmp);
+        canvas.drawBitmap(ball_bmp, warpedX - ball_bmp.getWidth() / 2,
+                warpedY - ball_bmp.getWidth() /2, paint);
     }
 
     /**
@@ -318,7 +355,22 @@ public final class SampleCameraControl extends ControlExtension {
         showBitmap(bmp);
     }
 
-    public void proceed() {
-        gameState = State.LVL1COMPLETE;
+    public void processEndPoint(int x, int y) {
+        if(gameState == State.LVL1) {
+            int xNet = (int) Math.abs(x * xmag + xtrans - objective[objective_cursor].getX());
+            int yNet = (int) Math.abs(y * ymag + ytrans - objective[objective_cursor].getY());
+
+            Log.d("mySony", "xNet: " + xNet + " n " + yNet);
+
+            //if the ball is within (about) a 20 pixel radius
+            if(xNet < 20 && yNet < 20) {
+
+                //iterates to the next objective, if it was the last objective...
+                if(++objective_cursor >= objective.length) {
+                    gameState = State.LVLCOMPLETE; //finish the level
+                    objective_cursor = 0;
+                }
+            }
+        }
     }
 }

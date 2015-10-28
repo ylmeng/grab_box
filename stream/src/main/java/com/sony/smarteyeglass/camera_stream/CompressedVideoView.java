@@ -36,8 +36,6 @@ public class CompressedVideoView extends SurfaceView implements SurfaceHolder.Ca
     private ExecutorService pushThread;
     private Subscriber<CompressedImage> cameraSub;
 
-    public static Bitmap bitmap;
-
     public CompressedVideoView(Context context) {
         super(context);
         initialize();
@@ -106,7 +104,7 @@ public class CompressedVideoView extends SurfaceView implements SurfaceHolder.Ca
                             if (holder != null && c != null) {
 
                                 BitmapFromCompressedImage bf = new BitmapFromCompressedImage();
-                                bitmap = bf.call(compressedImage);
+                                Bitmap bitmap = bf.call(compressedImage);
 
                                 //SampleCameraControl.getInstance().drawBitmap(bitmap.copy(bitmap.getConfig(), true));
 
