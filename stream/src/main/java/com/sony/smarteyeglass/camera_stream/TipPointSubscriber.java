@@ -43,11 +43,11 @@ public class TipPointSubscriber implements NodeMain {
                     return;
                 }
 
-                ball.setX(message.getX());
-                ball.setY(message.getY());
+                ball.setTargetX(message.getX() * SampleCameraControl.xmag + SampleCameraControl.xtrans);
+                ball.setTargetY(message.getY() * SampleCameraControl.ymag + SampleCameraControl.ytrans);
 
                 SampleCameraControl.getInstance().processEndPoint(
-                        (int) message.getX(), (int) message.getY());
+                        (int) ball.getX(), (int) ball.getY());
 
                 Log.d(Constants.LOG_TAG, "I heard: " + message.getX() + " " + message.getY());
                 Log.d(Constants.LOG_TAG, "ball is: " + ball.getX() + " " + ball.getY());

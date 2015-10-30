@@ -59,10 +59,15 @@ public final class SampleCameraControl extends ControlExtension {
     };
 
     State gameState = State.INITIAL;
-    private Ball[] objective = {new Ball(8 + 4, 138/2), new Ball(419 - 24 - 4, 138/2)};
-    private int objective_cursor = 0;
+    private int transitionAnimationTimer = 60;
+    private static int TRANSITION_LENGTH = 60;
 
     private int width, height;
+
+    private static final int PADDING = 10;
+    private Ball[] objective = { new Ball(Ball.WIDTH/2 + PADDING, 138/2), new Ball(419 - Ball.WIDTH/2 - PADDING, 138/2),
+            new Ball(419/2, 138 - Ball.WIDTH/2 - PADDING), new Ball(419/2, Ball.WIDTH/2 + PADDING) };
+    private int objective_cursor = 0;
 
     public static int xtrans = -550, ytrans = -605, focus = 6, option = 0;
     public static double xmag = 3.75, ymag = 3.02;
@@ -95,14 +100,20 @@ public final class SampleCameraControl extends ControlExtension {
             // handle result according to current recording mode
             @Override
             public void onCameraReceived(final CameraEvent event) {
+                updateDisplay();
+
+                if(gameState != State.LVL1 || transitionAnimationTimer < TRANSITION_LENGTH) {
+                    return;
+                }
 
                 if(skipFrame++ > 2) {
                     skipFrame = 0;
                     return;
                 }
 
+                TipPointSubscriber.getInstance().getBall().updatePos();
+
                 imagePublisher.onNewRawImage(event.getData(), 320, 240);
-                updateDisplay();
             }
             // Called when camera operation has failed
             // We just log the error
@@ -304,10 +315,25 @@ public final class SampleCameraControl extends ControlExtension {
         Bitmap bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bmp);
 
-        drawObjective(canvas);
-        drawBall(canvas);
+        drawBoardBorders(canvas);
+
+        if (transitionAnimationTimer >= TRANSITION_LENGTH || transitionAnimationTimer / 10 % 2 != 0) {
+            drawObjective(canvas);
+            drawBall(canvas);
+        }
 
         showBitmap(bmp);
+    }
+
+    public void drawBoardBorders(Canvas canvas) {
+        Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
+        paint.setColor(Color.WHITE);
+        paint.setStrokeWidth(4);
+
+        canvas.drawLine(0, 0, 0, height, paint);
+        canvas.drawLine(0, height, width, height, paint);
+        canvas.drawLine(width, height, width, 0, paint);
+        canvas.drawLine(width, 0, 0, 0, paint);
     }
 
     public void drawObjective(Canvas canvas) {
@@ -316,21 +342,23 @@ public final class SampleCameraControl extends ControlExtension {
         int x = (int)objective[objective_cursor].getX(),
             y = (int)objective[objective_cursor].getY();
 
+        Log.d("mySony", "objective_bitmap_width: " + objective_bmp.getWidth()
+                + " : " + objective_bmp.getScaledWidth(canvas));
+
         Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
-        canvas.drawBitmap(objective_bmp, x - objective_bmp.getWidth() / 2,
-                y - objective_bmp.getHeight() / 2, paint);
+        canvas.drawBitmap(objective_bmp, x - objective_bmp.getScaledWidth(canvas) / 2,
+                y - objective_bmp.getScaledHeight(canvas) / 2, paint);
     }
 
     public void drawBall(Canvas canvas) {
         Bitmap ball_bmp = getBitmapResource(R.drawable.ball);
-        Log.d("mySony", "config: " + ball_bmp.getConfig());
 
-        int warpedX = (int)(TipPointSubscriber.getInstance().getBall().getX() * xmag + xtrans);
-        int warpedY = (int)(TipPointSubscriber.getInstance().getBall().getY() * ymag + ytrans);
-
+        //int warpedX = (int)(TipPointSubscriber.getInstance().getBall().getX() * xmag + xtrans);
+        //int warpedY = (int)(TipPointSubscriber.getInstance().getBall().getY() * ymag + ytrans);
+        Ball b = TipPointSubscriber.getInstance().getBall();
         Paint paint = new Paint(Paint.FILTER_BITMAP_FLAG);
-        canvas.drawBitmap(ball_bmp, warpedX - ball_bmp.getWidth() / 2,
-                warpedY - ball_bmp.getWidth() /2, paint);
+        canvas.drawBitmap(ball_bmp, (int) b.getX() - ball_bmp.getScaledWidth(canvas) / 2,
+                (int) b.getY() - ball_bmp.getScaledHeight(canvas) / 2, paint);
     }
 
     /**
@@ -357,13 +385,16 @@ public final class SampleCameraControl extends ControlExtension {
 
     public void processEndPoint(int x, int y) {
         if(gameState == State.LVL1) {
-            int xNet = (int) Math.abs(x * xmag + xtrans - objective[objective_cursor].getX());
-            int yNet = (int) Math.abs(y * ymag + ytrans - objective[objective_cursor].getY());
+            int xNet = (int) Math.abs(x - objective[objective_cursor].getX());
+            int yNet = (int) Math.abs(y - objective[objective_cursor].getY());
 
             Log.d("mySony", "xNet: " + xNet + " n " + yNet);
 
             //if the ball is within (about) a 20 pixel radius
             if(xNet < 20 && yNet < 20) {
+                TipPointSubscriber.getInstance().getBall().lock();
+                objectiveReachedAnimation();
+                TipPointSubscriber.getInstance().getBall().unlock();
 
                 //iterates to the next objective, if it was the last objective...
                 if(++objective_cursor >= objective.length) {
@@ -371,6 +402,12 @@ public final class SampleCameraControl extends ControlExtension {
                     objective_cursor = 0;
                 }
             }
+        }
+    }
+
+    public void objectiveReachedAnimation() {
+        for(transitionAnimationTimer = 0; transitionAnimationTimer < TRANSITION_LENGTH; transitionAnimationTimer++) {
+            drawBoard();
         }
     }
 }
