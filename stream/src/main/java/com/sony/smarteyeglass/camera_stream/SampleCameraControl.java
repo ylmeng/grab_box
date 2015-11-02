@@ -60,13 +60,14 @@ public final class SampleCameraControl extends ControlExtension {
 
     State gameState = State.INITIAL;
     private int transitionAnimationTimer = 60;
-    private static int TRANSITION_LENGTH = 60;
+    private static int TRANSITION_LENGTH = 40;
 
     private int width, height;
 
     private static final int PADDING = 10;
     private Ball[] objective = { new Ball(Ball.WIDTH/2 + PADDING, 138/2), new Ball(419 - Ball.WIDTH/2 - PADDING, 138/2),
-            new Ball(419/2, 138 - Ball.WIDTH/2 - PADDING), new Ball(419/2, Ball.WIDTH/2 + PADDING) };
+            new Ball(419/2, 138 - Ball.WIDTH/2 - PADDING), new Ball(Ball.WIDTH/2 + PADDING, 138/2),
+            new Ball(419 - Ball.WIDTH/2 - PADDING, 138/2) };
     private int objective_cursor = 0;
 
     public static int xtrans = -550, ytrans = -605, focus = 6, option = 0;
@@ -317,7 +318,7 @@ public final class SampleCameraControl extends ControlExtension {
 
         drawBoardBorders(canvas);
 
-        if (transitionAnimationTimer >= TRANSITION_LENGTH || transitionAnimationTimer / 10 % 2 != 0) {
+        if (transitionAnimationTimer >= TRANSITION_LENGTH || transitionAnimationTimer / 7 % 2 != 0) {
             drawObjective(canvas);
             drawBall(canvas);
         }
