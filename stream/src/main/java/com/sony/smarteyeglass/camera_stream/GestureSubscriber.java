@@ -22,6 +22,7 @@ public class GestureSubscriber implements NodeMain {
 
     /* contains the last pose number read from myo */
     public int lastGesture = 0;
+    public long lastGestureTime = -1;
     public static int GRASPING = 1;
 
     public static GestureSubscriber getInstance() {
@@ -41,7 +42,13 @@ public class GestureSubscriber implements NodeMain {
         subscriber.addMessageListener(new MessageListener<std_msgs.Int32>() {
             @Override
             public void onNewMessage(std_msgs.Int32 message) {
+
+                int prevLastGesture = lastGesture;
                 lastGesture = message.getData();
+
+                if (lastGesture != 0 && prevLastGesture != 0) {
+                    lastGestureTime = System.nanoTime();
+                }
 
                 if(SampleCameraControl.getInstance() != null &&
                         SampleCameraControl.getInstance().gameState == SampleCameraControl.State.INITIAL

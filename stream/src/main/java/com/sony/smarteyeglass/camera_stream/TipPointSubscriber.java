@@ -9,6 +9,8 @@ import org.ros.node.Node;
 import org.ros.node.NodeMain;
 import org.ros.node.topic.Subscriber;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * Created by chris on 9/18/15.
  */
@@ -39,7 +41,8 @@ public class TipPointSubscriber implements NodeMain {
                 //do not update ball's position if the ball is not found
                 if(ball == null || message.getX() == Ball.NOT_FOUND_COORD
                         || message.getY() == Ball.NOT_FOUND_COORD
-                        || GestureSubscriber.getInstance().lastGesture != GestureSubscriber.GRASPING) {
+                        || TimeUnit.NANOSECONDS.toSeconds(System.nanoTime()
+                        - GestureSubscriber.getInstance().lastGestureTime) > 3) {
                     return;
                 }
 
